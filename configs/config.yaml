@@ -1,0 +1,14 @@
+# 监控检查的频率（秒）
+check_interval: 60
+
+# systemd 服务监控配置
+systemd:
+  # 需要监控的服务列表
+  services:
+    - "sshd.service"
+    - "nginx.service"
+    - "my-app.service" # 一个不存在的服务，用于测试失败场景
+
+# 飞书机器人通知配置
+lark:
+  webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_ID" # 替换成你的飞书机器人 Webhook 地址
