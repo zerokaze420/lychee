@@ -6,7 +6,7 @@ systemd:
   # 需要监控的服务列表
   services:
     - "sshd.service"
-    - "nginx.service"
+    - "daed.service"
     - "my-app.service" # 一个不存在的服务，用于测试失败场景
 
 # 飞书机器人通知配置
