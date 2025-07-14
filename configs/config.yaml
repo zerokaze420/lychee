@@ -1,5 +1,5 @@
 # 监控检查的频率（秒）
-check_interval: 60
+check_interval: 5
 
 # systemd 服务监控配置
 systemd:
