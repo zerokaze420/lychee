@@ -32,17 +32,20 @@ jobs:
         with:
           go-version: '1.24.5' # 你可以修改为你项目使用的 Go 版本
 
-      # 第三步：构建 Go 应用
-      # 设置环境变量 GOOS=linux 来指定目标操作系统为 Linux
-      # 然后执行你的 build 命令
+      # 新增步骤：安装 systemd 开发库
+      # 因为 go-systemd 依赖 CGO 和 systemd 的头文件
+      - name: Install systemd dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsystemd-dev
+
+      # 第四步：构建 Go 应用
+      # 移除了 CGO_ENABLED: 0 因为依赖项需要 CGo
+      # GOOS 和 GOARCH 不是必需的，因为我们是在 Linux runner 上构建 Linux 二进制文件，但保留它们也无妨
       - name: Build for Linux
         run: |
           echo "Building for Linux..."
-          GOOS=linux GOARCH=amd64 go build -o lychee ./cmd/app/main.go
-        env:
-          CGO_ENABLED: 0 # 交叉编译时通常建议禁用 CGO
+          go build -o lychee ./cmd/app/main.go
 
-      # 第四步：创建 Release 并上传构建产物
+      # 第五步：创建 Release 并上传构建产物
       # 使用 ncipollo/release-action 这个流行的 action 来自动创建 Release
       # 并将我们上一步构建出的 'lychee' 文件作为附件上传
       - name: Create Release and Upload Asset
