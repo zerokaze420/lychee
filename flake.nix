@@ -10,30 +10,44 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        # 👇 把依赖定义在这里，方便复用
         go-systemd-deps = [
-          pkgs.systemd      # 提供 .h 头文件和 .so 库文件
-          pkgs.pkg-config   # CGO 用来查找库的工具
+          pkgs.systemd
+          pkgs.pkg-config
         ];
       in
       {
-        # --- 1. 如果你是为了最终打包（例如构建 Docker 镜像或二进制文件）---
         packages.default = pkgs.buildGoModule {
-          pname = "my-go-app";
+          pname = "lychee"; # ✨ 我把名字改成了 lychee
           version = "0.1.0";
           src = ./.;
-          vendorHash = pkgs.lib.fakeSha256; # 替换成你的 vendorHash
+          # 👇 记得替换成真实的 hash
+          vendorHash = "sha256-RIjhPcNyIISq7QF1k2aRyMzA5Eh/rv+epL5BZ+LmPCs=";
 
-          # CGO 需要的构建工具
-          nativeBuildInputs = go-systemd-deps;
+          # nativeBuildInputs = go-systemd-deps;
+            nativeBuildInputs = [ pkgs.systemd pkgs.pkg-config ];
         };
 
-        # --- 2. 如果你是为了开发环境（nix develop）---
+        # ⭐️ 新增的部分：定义测试
+        checks.default = pkgs.runCommand "go-unit-tests" {
+          # 将构建依赖也作为测试的依赖
+          nativeBuildInputs = [ pkgs.go ] ++ go-systemd-deps;
+          src = ./.;
+        } ''
+          # 进入项目源码目录
+          cd $src
+
+          # 运行 Go 的标准测试命令
+          # 如果测试失败，命令会以非零状态码退出，CI 就会失败
+          go test ./...
+
+          # 创建一个空的 $out 文件表示测试成功
+          echo "Go tests passed" > $out
+        '';
+
         devShells.default = pkgs.mkShell {
-          # 开发环境中需要的工具和库
           packages = [
             pkgs.go
-          ] ++ go-systemd-deps; # 直接将依赖加入
+          ] ++ go-systemd-deps;
         };
       }
     );
