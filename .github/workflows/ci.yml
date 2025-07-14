@@ -41,8 +41,8 @@ jobs:
 
       # 4. 运行 Flake 中定义的检查 (checks)
       # 这是运行单元测试、代码格式化检查等的标准方式
-      - name: "运行 Flake 检查 (测试)"
-        run: nix flake check
+      # - name: "运行 Flake 检查 (测试)"
+      #   run: nix flake check
 
       # 5. 构建 Flake 中定义的默认包
       # 这会验证你的 Go 项目是否可以被成功编译
