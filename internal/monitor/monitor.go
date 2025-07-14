@@ -14,4 +14,3 @@ type Monitor interface {
 	// Name 返回监控器的名称
 	Name() string
 }
-
