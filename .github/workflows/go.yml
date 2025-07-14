@@ -1,20 +1,56 @@
-name: Go Build
+# .github/workflows/release.yml
 
-on: [push, pull_request]
+# 工作流名称
+name: Go Release Build
 
+# 触发工作流的事件
+# 这里设置为当有新的 tag (例如 v1.0.0) 被推送到仓库时触发
+on:
+  push:
+    tags:
+      - 'v*' # 匹配所有以 'v' 开头的 tag
+
+# 定义工作流中的任务
 jobs:
-  build:
+  build-and-release:
+    # 任务名称
+    name: Build and Release
+    # 运行此任务的虚拟机环境
     runs-on: ubuntu-latest
+    
+    # 任务中的步骤
     steps:
-    - uses: actions/checkout@v4
+      # 第一步：检出代码
+      # 使用官方的 checkout action 来获取你的仓库代码
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24' # Specify the desired Go version here
+      # 第二步：设置 Go 环境
+      # 使用官方的 setup-go action 来配置 Go 运行环境
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5' # 你可以修改为你项目使用的 Go 版本
 
-    - name: Build
-      run: go build -v ./...
+      # 第三步：构建 Go 应用
+      # 设置环境变量 GOOS=linux 来指定目标操作系统为 Linux
+      # 然后执行你的 build 命令
+      - name: Build for Linux
+        run: |
+          echo "Building for Linux..."
+          GOOS=linux GOARCH=amd64 go build -o lychee ./cmd/app/main.go
+        env:
+          CGO_ENABLED: 0 # 交叉编译时通常建议禁用 CGO
 
-    - name: Test
-      run: go test -v ./...
+      # 第四步：创建 Release 并上传构建产物
+      # 使用 ncipollo/release-action 这个流行的 action 来自动创建 Release
+      # 并将我们上一步构建出的 'lychee' 文件作为附件上传
+      - name: Create Release and Upload Asset
+        uses: ncipollo/release-action@v1
+        with:
+          # 要上传的构建产物文件列表，这里是我们的二进制文件
+          artifacts: "lychee"
+          # GitHub 会自动提供 GITHUB_TOKEN，用于授权 action 创建 Release
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # 允许 action 覆盖已经存在的 release assets
+          allowUpdates: true
