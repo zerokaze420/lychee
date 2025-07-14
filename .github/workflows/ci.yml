@@ -1,0 +1,50 @@
+# .github/workflows/ci.yml
+
+name: "构建与测试 (Nix Flake)"
+
+# 定义触发工作流的事件
+on:
+  # 当有代码推送到 main 分支时
+  push:
+    branches:
+      - "main"
+  # 当有 Pull Request 指向 main 分支时
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  build-and-test:
+    # 使用最新的 Ubuntu 运行环境
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出你的代码
+      - name: "检出代码"
+        uses: actions/checkout@v4
+
+      # 2. 安装 Nix 并启用 Flakes 功能
+      - name: "安装 Nix"
+        uses: cachix/install-nix-action@v27
+        with:
+          # 开启 Flakes 和 nix-command 实验性功能，这是必须的
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      # 3. ⚡️ 设置 Cachix 缓存以加速构建 (强烈推荐)
+      - name: "设置 Cachix 缓存"
+        uses: cachix/cachix-action@v15
+        with:
+          # 将这里的 'hashcowuwu' 替换成你在 Cachix 上创建的缓存名
+          name: lychee
+          # 从 GitHub Secrets 读取认证令牌，你需要预先设置好
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      # 4. 运行 Flake 中定义的检查 (checks)
+      # 这是运行单元测试、代码格式化检查等的标准方式
+      - name: "运行 Flake 检查 (测试)"
+        run: nix flake check
+
+      # 5. 构建 Flake 中定义的默认包
+      # 这会验证你的 Go 项目是否可以被成功编译
+      - name: "构建 Flake 包"
+        run: nix build
