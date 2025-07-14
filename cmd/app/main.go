@@ -5,6 +5,7 @@ import (
 	"flag" // 1. 导入 flag 包
 	"hashcowuwu/lychee/internal/config"
 	"hashcowuwu/lychee/internal/monitor"
+	"hashcowuwu/lychee/internal/monitor/journal"
 	"hashcowuwu/lychee/internal/monitor/systemd"
 	"hashcowuwu/lychee/internal/notifier"
 	"hashcowuwu/lychee/internal/notifier/lark"
@@ -25,6 +26,16 @@ func main() {
 	var monitors []monitor.Monitor
 	for _, serviceName := range cfg.Systemd.Services {
 		monitors = append(monitors, systemd.New(serviceName))
+	}
+
+	for _, journalCfg := range cfg.Journal {
+		log.Printf("为服务 [%s] 设置 journal 日志监控, 关键字: %v", journalCfg.ServiceName, journalCfg.Keywords)
+		m, err := journal.New(journalCfg.ServiceName, journalCfg.Keywords)
+		if err != nil {
+			log.Printf("警告: 无法为服务 [%s] 创建 journal 监控器: %v", journalCfg.ServiceName, err)
+			continue
+		}
+		monitors = append(monitors, m)
 	}
 
 	log.Println("运维监控工具启动...")

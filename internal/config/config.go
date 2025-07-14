@@ -4,6 +4,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+// JournalConfig 定义了 journald 日志监控的配置
+type JournalConfig struct {
+	ServiceName string   `yaml:"serviceName"`
+	Keywords    []string `yaml:"keywords"`
+}
+
 // Config 存储了应用的所有配置
 type Config struct {
 	CheckInterval int `mapstructure:"check_interval"`
@@ -13,6 +19,7 @@ type Config struct {
 	Lark struct {
 		WebhookURL string `mapstructure:"webhook_url"`
 	} `mapstructure:"lark"`
+	Journal []JournalConfig `yaml:"journal"`
 }
 
 // Load 从指定路径加载配置
