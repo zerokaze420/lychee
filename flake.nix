@@ -22,7 +22,7 @@
           src = ./.;
 
           nativeBuildInputs = [
-            pkgs.go
+            pkgs.go_1_24
             pkgs.pkg-config
             pkgs.systemd
           ];
@@ -30,7 +30,7 @@
           buildPhase = ''
             export HOME=$(pwd)
             export GOPROXY=https://goproxy.cn,direct
-            export CGO_LDFLAGS="-rpath ${pkgs.lib.makeLibraryPath [ pkgs.systemd ]}"
+            export CGO_LDFLAGS="-Wl,-rpath,${pkgs.lib.makeLibraryPath [ pkgs.systemd ]}"
             go build -mod=vendor -v -o lychee ./cmd/app/main.go
           '';
 
@@ -42,7 +42,7 @@
 
         devShells.default = pkgs.mkShell {
           packages = [
-            pkgs.go_1_22
+            pkgs.go_1_24
           ] ++ go-systemd-deps;
         };
       }
