@@ -3,7 +3,7 @@
 checkInterval: 60
 
 lark:
-  webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/5845d71e-1896-4e2e-a1a3-2efc9c7da8c7"
+  webhookUrl: ""
 
 # systemd 状态监控 (检查服务是否 active)
 systemd:
