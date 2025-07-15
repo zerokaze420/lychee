@@ -3,12 +3,12 @@
 checkInterval: 60
 
 lark:
-  webhookUrl: "你的飞书机器人 WEBHOOK_URL"
+  webhookUrl: "https://open.feishu.cn/open-apis/bot/v2/hook/5845d71e-1896-4e2e-a1a3-2efc9c7da8c7"
 
 # systemd 状态监控 (检查服务是否 active)
 systemd:
   services:
-    - "nginx.service"
+    - "daed.service"
     - "sshd.service"
 
 # 新增部分：journald 日志监控 (检查服务日志中的关键字)
