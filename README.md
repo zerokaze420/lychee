@@ -27,6 +27,13 @@
 
 ## 构建
 
+### 构建要求
+
+* go 1.24.4  
+
+或者使用nix flake 进行构建
+
+
 ```shell
 go build -o lychee ./cmd/app/main.go 
 
