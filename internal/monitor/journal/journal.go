@@ -1,98 +1,126 @@
 package journal
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"hashcowuwu/lychee/internal/monitor"
+	"log"
+	"os/exec"
 	"strings"
-
-	"github.com/coreos/go-systemd/v22/sdjournal"
 )
 
-// JournalMonitor 从 systemd journal 中读取特定服务的日志
+// JournalEntry 對應 journalctl -o json 輸出的單條日誌結構。
+// 我們只需要 __CURSOR 和 MESSAGE 兩個字段。
+type JournalEntry struct {
+	Cursor  string `json:"__CURSOR"`
+	Message string `json:"MESSAGE"`
+}
+
+// JournalMonitor 從 systemd journal 中讀取特定服務的日志
+// 它通過執行 journalctl 命令並管理 cursor 來實現，完全不依賴 CGO。
 type JournalMonitor struct {
 	serviceName string
 	keywords    []string
-	journal     *sdjournal.Journal
+	// cursor 用於記錄上次讀取到的日誌位置，以便下次只讀取新的日誌。
+	cursor string
 }
 
-// New 创建一个新的 JournalMonitor 实例
+// New 創建一個新的 JournalMonitor 實例
 func New(serviceName string, keywords []string) (monitor.Monitor, error) {
-	// 创建一个新的 journal reader
-	j, err := sdjournal.NewJournal()
-	if err != nil {
-		return nil, fmt.Errorf("无法打开 journal: %w", err)
-	}
-
-	// 添加过滤器，只匹配特定服务的日志
-	// 这相当于 journalctl -u <serviceName>
-	match := sdjournal.Match{
-		Field: sdjournal.SD_JOURNAL_FIELD_SYSTEMD_UNIT,
-		Value: serviceName,
-	}
-	if err := j.AddMatch(match.String()); err != nil {
-		j.Close()
-		return nil, fmt.Errorf("为服务 [%s] 添加 journal 过滤器失败: %w", serviceName, err)
-	}
-
-	// 将光标移动到日志的末尾，这样我们只会读取未来的新日志
-	if err := j.SeekTail(); err != nil {
-		j.Close()
-		return nil, fmt.Errorf("无法将 journal 光标移动到末尾: %w", err)
-	}
-	// 为了让第一次 Check() 不读取旧日志，我们先空读一次，将光标确实移动到最后一条之后
-	j.Next()
-
-	return &JournalMonitor{
+	// 創建一個基礎的 monitor 實例
+	jm := &JournalMonitor{
 		serviceName: serviceName,
 		keywords:    keywords,
-		journal:     j,
-	}, nil
-}
+	}
 
-func (jm *JournalMonitor) Name() string {
-	return fmt.Sprintf("journal-%s", jm.serviceName)
-}
-
-// Check 从上次的位置开始，检查新的日志条目
-func (jm *JournalMonitor) Check() monitor.Result {
-	var matchedMessages []string
-
-	// 循环读取自上次检查以来所有新的日志条目
-	for {
-		// j.Next() 会将光标向前移动一条。如果没有新日志，它会返回 0。
-		r, err := jm.journal.Next()
-		if err != nil {
-			return monitor.Result{Success: false, Message: fmt.Sprintf("服务 [%s] 读取 journal 出错: %v", jm.serviceName, err)}
-		}
-		if r == 0 {
-			// 没有更多新条目了
-			break
-		}
-
-		// 获取日志条目
-		entry, err := jm.journal.GetEntry()
-		if err != nil {
-			return monitor.Result{Success: false, Message: fmt.Sprintf("服务 [%s] 获取 journal 条目失败: %v", jm.serviceName, err)}
-		}
-
-		// 获取日志消息正文
-		message, ok := entry.Fields[sdjournal.SD_JOURNAL_FIELD_MESSAGE]
-		if !ok {
-			continue // 如果没有消息字段，跳过
-		}
-
-		// 检查关键字
-		for _, keyword := range jm.keywords {
-			if strings.Contains(strings.ToLower(message), strings.ToLower(keyword)) {
-				msg := fmt.Sprintf("服务 [%s] journal 日志发现关键字 '%s': %s", jm.serviceName, keyword, message)
-				matchedMessages = append(matchedMessages, msg)
-				break
+	// 初始化 cursor，將其設置為當前服務最新一條日誌的位置。
+	// 這相當於原代碼中的 j.SeekTail() + j.Next()。
+	// 我們只獲取最新的一條 (-n 1) 來拿到它的 cursor。
+	cmd := exec.Command("journalctl", "-u", serviceName, "-n", "1", "-o", "json", "--no-pager")
+	output, err := cmd.Output()
+	if err != nil {
+		// 如果命令執行失敗（例如服務不存在或還沒有任何日誌），我們不將其視為致命錯誤。
+		// cursor 將為空，第一次 Check() 會從頭讀取（或讀取最近的日誌）。
+		// 這裡可以根據您的需求決定是否返回錯誤。
+		// 作為監控，允許服務初期沒有日誌是合理的。
+		log.Printf("注意: 為服務 [%s] 初始化 cursor 失敗 (可能是新服務無日誌): %v", serviceName, err)
+	} else {
+		// 從輸出中解析最後一條日誌的 cursor
+		scanner := bufio.NewScanner(strings.NewReader(string(output)))
+		if scanner.Scan() {
+			var entry JournalEntry
+			if err := json.Unmarshal(scanner.Bytes(), &entry); err == nil {
+				jm.cursor = entry.Cursor
 			}
 		}
 	}
 
-	// 等待新日志。这使得检查是非阻塞的，并且在没有新日志时能快速返回。
-	jm.journal.Wait(0)
+	return jm, nil
+}
+
+// Name 返回監控器的名稱
+func (jm *JournalMonitor) Name() string {
+	return fmt.Sprintf("journal-%s", jm.serviceName)
+}
+
+// Check 從上次的位置開始，檢查新的日誌條目
+func (jm *JournalMonitor) Check() monitor.Result {
+	var matchedMessages []string
+
+	// 準備 journalctl 命令的參數
+	args := []string{"-u", jm.serviceName, "-o", "json", "--no-pager"}
+	if jm.cursor != "" {
+		// 如果我們有 cursor，就只讀取它之後的日誌
+		args = append(args, "--after-cursor", jm.cursor)
+	}
+
+	cmd := exec.Command("journalctl", args...)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return monitor.Result{Success: false, Message: fmt.Sprintf("服務 [%s] 無法創建命令管道: %v", jm.serviceName, err)}
+	}
+
+	if err := cmd.Start(); err != nil {
+		return monitor.Result{Success: false, Message: fmt.Sprintf("服務 [%s] 無法啟動 journalctl: %v", jm.serviceName, err)}
+	}
+
+	// 逐行讀取新日誌
+	scanner := bufio.NewScanner(stdout)
+	var lastReadCursor string
+	for scanner.Scan() {
+		line := scanner.Bytes()
+
+		var entry JournalEntry
+		if err := json.Unmarshal(line, &entry); err != nil {
+			// 忽略無法解析的行
+			continue
+		}
+
+		// 更新我們在此次檢查中讀到的最後一個 cursor
+		lastReadCursor = entry.Cursor
+
+		// 檢查關鍵字
+		for _, keyword := range jm.keywords {
+			if strings.Contains(strings.ToLower(entry.Message), strings.ToLower(keyword)) {
+				msg := fmt.Sprintf("服務 [%s] journal 日志發現關鍵字 '%s': %s", jm.serviceName, keyword, entry.Message)
+				matchedMessages = append(matchedMessages, msg)
+				break // 找到一個關鍵字就足夠了，處理下一條日誌
+			}
+		}
+	}
+
+	// 等待命令結束
+	if err := cmd.Wait(); err != nil {
+		// journalctl 在沒有新日誌時可能會以非 0 狀態碼退出，這裡可以更寬容地處理
+		// 但如果管道讀取正常，通常可以忽略 wait 的錯誤
+	}
+
+	// 如果我們讀到了新日誌，就更新 monitor 的 cursor 狀態
+	if lastReadCursor != "" {
+		jm.cursor = lastReadCursor
+	}
 
 	if len(matchedMessages) > 0 {
 		return monitor.Result{
