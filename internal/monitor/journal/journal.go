@@ -7,6 +7,7 @@ import (
 	"hashcowuwu/lychee/internal/monitor"
 	"log"
 	"os/exec"
+	"regexp" // 導入 regexp 包
 	"strings"
 )
 
@@ -101,10 +102,20 @@ func (jm *JournalMonitor) Check() monitor.Result {
 		// 更新我們在此次檢查中讀到的最後一個 cursor
 		lastReadCursor = entry.Cursor
 
-		// 檢查關鍵字
+		// 檢查關鍵字 - 使用正則表達式
 		for _, keyword := range jm.keywords {
-			if strings.Contains(strings.ToLower(entry.Message), strings.ToLower(keyword)) {
-				msg := fmt.Sprintf("服務 [%s] journal 日志發現關鍵字 '%s': %s", jm.serviceName, keyword, entry.Message)
+			// 编译正则表达式。(?i) 表示不區分大小寫匹配。
+			// 如果您的關鍵字可能包含正則表達式特殊字符，但您希望它們被字面匹配，
+			// 則應使用 regexp.QuoteMeta(keyword) 進行轉義。
+			// 例如：re, err := regexp.Compile("(?i)" + regexp.QuoteMeta(keyword))
+			re, err := regexp.Compile("(?i)" + keyword)
+			if err != nil {
+				log.Printf("警告: 服務 [%s] 關鍵字 '%s' 正則表達式編譯失敗: %v", jm.serviceName, keyword, err)
+				continue // 跳過當前無效的關鍵字，繼續處理下一個
+			}
+
+			if re.MatchString(entry.Message) {
+				msg := fmt.Sprintf("服務 [%s] journal 日誌發現關鍵字 '%s': %s", jm.serviceName, keyword, entry.Message)
 				matchedMessages = append(matchedMessages, msg)
 				break // 找到一個關鍵字就足夠了，處理下一條日誌
 			}
@@ -115,6 +126,14 @@ func (jm *JournalMonitor) Check() monitor.Result {
 	if err := cmd.Wait(); err != nil {
 		// journalctl 在沒有新日誌時可能會以非 0 狀態碼退出，這裡可以更寬容地處理
 		// 但如果管道讀取正常，通常可以忽略 wait 的錯誤
+		// 只有當 err 不是 ExitError 且不是 0 狀態碼時才記錄為錯誤
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// 如果是 journalctl 正常退出但沒有新日誌，其退出碼可能為非零
+			// 這裡可以根據需要調整錯誤處理邏輯
+			log.Printf("注意: 服務 [%s] journalctl 命令退出，狀態碼: %d", jm.serviceName, exitErr.ExitCode())
+		} else {
+			log.Printf("錯誤: 服務 [%s] journalctl 命令等待失敗: %v", jm.serviceName, err)
+		}
 	}
 
 	// 如果我們讀到了新日誌，就更新 monitor 的 cursor 狀態
@@ -124,7 +143,7 @@ func (jm *JournalMonitor) Check() monitor.Result {
 
 	if len(matchedMessages) > 0 {
 		return monitor.Result{
-			Success: false,
+			Success: false, // 發現關鍵字通常表示非成功狀態
 			Message: strings.Join(matchedMessages, "\n"),
 		}
 	}
