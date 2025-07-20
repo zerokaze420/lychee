@@ -15,11 +15,12 @@
 * 对systemctl 服务的基本监控
 * 集成发送飞书
 * 基本实现日志检测发送(未测试)
+* 实现监测特定服务是否运行正常，记录过滤日志。  
 
 ## TODO
 
-1. 实现监测特定服务是否运行正常，记录过滤日志。  
-2. 实现集成发送到飞书 / 以及其他交互平台
+1. 实现web界面
+
 
 ## 安装
 
@@ -51,21 +52,31 @@ go build -o lychee ./cmd/app/main.go
 
 ## 配置文件示例
 
-```shell 
+```yaml
+# config.yaml
 
-# 监控检查的频率（秒）
-check_interval: 60
+checkInterval: 60
 
-# systemd 服务监控配置
-systemd:
-  # 需要监控的服务列表
-  services:
-    - "sshd.service"
-    - "daed.service"
-
-# 飞书机器人通知配置
 lark:
-  webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/YOUR_WEBHOOK_ID" # 替换成你的飞书机器人 Webhook 地址
+  webhookUrl: ""
+
+# systemd 状态监控 (检查服务是否 active)
+systemd:
+  services:
+    - "daed.service"
+    - "sshd.service"
+
+# 新增部分：journald 日志监控 (检查服务日志中的关键字)
+journal:
+  - serviceName: "nginx.service"
+    keywords:
+      - "error"
+      - "failed"
+      - "denied"
+  - serviceName: "sshd.service"
+    keywords:
+      - "Failed password"
+      - "Invalid user"
 
 ```
 
