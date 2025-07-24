@@ -15,7 +15,7 @@ type Config struct {
 		Services []string `yaml:"services"`
 	} `yaml:"systemd"`
 	Lark struct {
-		WebhookURL string `yaml:"webhook_url"`
+		WebhookURLs []string `yaml:"webhook_urls"`
 	} `yaml:"lark"`
 	Journal []JournalConfig `yaml:"journal"`
 }

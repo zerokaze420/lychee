@@ -1,0 +1,65 @@
+# 工作流名稱
+name: Go Semantic Release (JS Version)
+
+# 觸發工作流的事件
+# semantic-release 會在推送到 main 或 master 分支時觸發
+on:
+  push:
+    branches:
+      - main # 或者 'master'，取決於你的主分支名稱
+
+# 定義工作流中的任務
+jobs:
+  release:
+    # 任務名稱
+    name: Semantic Release
+    # 運行此任務的虛擬機環境
+    runs-on: ubuntu-latest
+
+    # 任務中的步驟
+    steps:
+      # 第一步：檢出程式碼
+      # 使用官方的 checkout action 來獲取你的倉庫程式碼
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # semantic-release 需要完整的 Git 歷史記錄來分析提交
+          fetch-depth: 0
+
+      # 第二步：設定 Go 環境
+      # 使用官方的 setup-go action 來配置 Go 運行環境
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.5' # 你可以修改為你專案使用的 Go 版本
+
+      # 新增步驟：安裝 systemd 開發庫
+      # 因為 go-systemd 依賴 CGO 和 systemd 的頭文件
+      - name: Install systemd dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsystemd-dev
+
+      # 第三步：構建 Go 應用
+      # 這一步在 semantic-release 之前執行，確保 Go 二進制檔案已準備好上傳
+      - name: Build Go Application
+        run: |
+          echo "Building for Linux..."
+          go build -o lychee ./cmd/app/main.go
+
+      # 第四步：安裝 Node.js (Semantic Release 是 Node.js 應用)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Semantic Release 需要 Node.js 環境，建議使用 LTS 版本
+
+      # 第五步：安裝 Semantic Release 及相關插件
+      # 在 package.json 中管理依賴會更乾淨，但也可以直接在此處安裝
+      - name: Install Semantic Release and Plugins
+        run: npm install semantic-release @semantic-release/git @semantic-release/changelog @semantic-release/github @semantic-release/exec
+
+      # 第六步：運行 Semantic Release
+      # 這一步負責分析提交、生成版本、建立 Git Tag 和 GitHub Release
+      - name: Run Semantic Release
+        env:
+          # GITHUB_TOKEN 是由 GitHub 自動提供的，用於授權 semantic-release 建立 release
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

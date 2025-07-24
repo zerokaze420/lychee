@@ -23,7 +23,7 @@ func main() {
 	}
 	log.Printf("加载的 checkInterval: %d", cfg.CheckInterval)
 
-	var notif notifier.Notifier = lark.New(cfg.Lark.WebhookURL)
+	var notif notifier.Notifier = lark.New(cfg.Lark.WebhookURLs)
 	var monitors []monitor.Monitor
 	for _, serviceName := range cfg.Systemd.Services {
 		monitors = append(monitors, systemd.New(serviceName))

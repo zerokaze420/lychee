@@ -3,13 +3,15 @@
 checkInterval: 60
 
 lark:
-  webhookUrl: ""
+  WebhookURLs: 
+   - "https://open.feishu.cn/open-apis/bot/v2/hook/URL"
 
 # systemd 状态监控 (检查服务是否 active)
 systemd:
   services:
     - "daed.service"
     - "sshd.service"
+    - "nginx.service"
 
 # 新增部分：journald 日志监控 (检查服务日志中的关键字)
 journal:
