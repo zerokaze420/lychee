@@ -28,5 +28,8 @@ lychee
 main
 result/
 result
-
+.direnv/
+.envrc
+nix-shell/
+.nix-profile/
 # End of https://www.toptal.com/developers/gitignore/api/go
