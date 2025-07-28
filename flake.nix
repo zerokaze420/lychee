@@ -2,7 +2,7 @@
   description = "My Go application"; # 更新描述，不再提及 systemd
 
   inputs = {
-    nixpkgs.url = "github.com/NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     # 修正 flake-utils 的 URL，加上 https://
     flake-utils.url = "github:numtide/flake-utils";
   };
