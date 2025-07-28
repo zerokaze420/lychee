@@ -27,5 +27,6 @@ go.work
 lychee
 main
 result/
+result
 
 # End of https://www.toptal.com/developers/gitignore/api/go
