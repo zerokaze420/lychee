@@ -3,14 +3,14 @@
 
   inputs = {
     nixpkgs.url = "github.com/NixOS/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github.com/numtide/flake-utils";
+    # 修正 flake-utils 的 URL，加上 https://
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        # 移除了 pkgs.systemd
         go-deps = [
           pkgs.pkg-config
         ];
@@ -30,9 +30,6 @@
           buildPhase = ''
             export HOME=$(pwd)
             export GOPROXY=https://goproxy.cn,direct
-            # 移除了对 systemd 库路径的引用，如果你的 Go 代码不再使用 libsystemd，
-            # 这行就不再需要了。如果 Go 代码仍然隐式地需要它，编译会失败。
-            # export CGO_LDFLAGS="-Wl,-rpath,${pkgs.lib.makeLibraryPath [ pkgs.systemd ]}"
             go build -mod=vendor -v -o lychee ./cmd/app/main.go
           '';
 
