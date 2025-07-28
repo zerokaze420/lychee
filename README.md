@@ -101,3 +101,6 @@ journal:
       - "Failed password"
       - "Invalid user"
 ```
+
+## 贡献 🤝
+我们非常欢迎您的贡献！请查看我们的 [贡献指南](CONTRIBUTING.md) 以获取更多信息。
