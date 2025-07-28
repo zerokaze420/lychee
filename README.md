@@ -46,6 +46,13 @@ go build -o lychee ./cmd/app/main.go
 
 -----
 
+### 从NIX BUilD构建
+
+```shell
+nix build .
+```
+
+
 ## 使用方法 🚀
 
 构建或安装完成后，您可以通过指定配置文件来运行 LYCHEE：

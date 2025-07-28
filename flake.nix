@@ -38,6 +38,18 @@
             mv lychee $out/bin/
           '';
         };
+        packages.lychee-Image =  pkgs.dockerTools.buildImage {
+          name = "lychee";
+          config = {
+            Cmd = [ "/lychee" ];
+            WorkingDir = "/app";
+            Env = [
+              "GO111MODULE=on"
+              "GOPROXY=https://goproxy.cn,direct"
+            ];
+            Volumes = {};
+          };
+        };
 
         devShells.default = pkgs.mkShell {
           packages = [
