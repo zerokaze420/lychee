@@ -105,4 +105,9 @@ journal:
 ```
 
 ## 贡献 🤝
+
 我们非常欢迎您的贡献！请查看我们的 [贡献指南](CONTRIBUTING.md) 以获取更多信息。
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
