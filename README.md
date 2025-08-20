@@ -1,46 +1,47 @@
+
 <img src="Source/title.png" alt="alt" width="20%">
 
-# LYCHEE: 自动化运维与智能监控利器 🚀
+# LYCHEE: A Powerful Tool for Automated Operations & Intelligent Monitoring 🚀
 
-**LYCHEE (荔枝)** 是一款集成了 **CI/CD 部署**、**系统监控** 和 **预警通知** 功能的**命令行工具**。它旨在简化您的运维流程，确保系统服务的健康运行，并在出现问题时及时发送通知。告别繁琐，拥抱高效！✨
+**LYCHEE** is a **command-line tool** that integrates **CI/CD deployment**, **system monitoring**, and **alert notifications**. It is designed to simplify your operational workflow, ensure the healthy operation of your system services, and send timely notifications when issues arise. Say goodbye to tedious tasks and embrace efficiency! ✨
 
->警告目前项目为dev模式，后期可能会有大的变动，欢迎提issue
-
------
-
-## 核心功能 💡
-
-- [x] **Systemd 服务监控：** 对 `systemctl` 服务进行基础且有效的监控，确保它们正常运行。👁️‍🗨️
-- [x] **飞书集成通知：** 将警报和通知无缝发送到您的飞书（Lark）群组。📨
-- [x] **日志异常检测（基础）：** 监控服务日志中的特定关键词，帮助您及早发现潜在问题（目前为基础实现，尚待全面测试）。🔍
-- [x] **服务健康检查：** 主动检查指定服务是否正常运行，并记录和过滤相关日志以供分析。❤️‍🩹
-- [x]  **多账号日志发送：** 增强日志发送功能，支持将日志发送到多个账号或目的地。📧
-- [ ]  **容器管理：** 支持监控和管理容器化应用程序。🐳
-
+> Warning: This project is currently in dev mode. There may be significant changes in the future. Issues are welcome!
 
 -----
 
-## 安装 🛠️
+## Core Features 💡
 
-在 **Ubuntu 发行版**上安装 LYCHEE 非常简单。
+- [x] **Systemd Service Monitoring:** Provides basic and effective monitoring for `systemctl` services to ensure they are running correctly. 👁️‍🗨️
+- [x] **Lark Integration:** Seamlessly sends alerts and notifications to your Lark groups. 📨
+- [x] **Basic Log Anomaly Detection:** Monitors service logs for specific keywords to help you detect potential issues early (currently a basic implementation, pending comprehensive testing). 🔍
+- [x] **Service Health Checks:** Actively checks if specified services are running correctly, and records and filters relevant logs for analysis. ❤️‍🩹
+- [x] **Multi-Account Log Forwarding:** Enhanced log forwarding feature that supports sending logs to multiple accounts or destinations. 📧
+- [ ] **Container Management:** Support for monitoring and managing containerized applications. 🐳
 
-只需使用 `sudo` 运行安装脚本即可：
+
+-----
+
+## Installation 🛠️
+
+Installing LYCHEE on **Ubuntu distributions** is straightforward.
+
+Simply run the installation script with `sudo`:
 
 ```bash
 sudo ./install.sh
-```
+````
 
 -----
 
-## 从源码构建 🏗️
+## Build from Source 🏗️
 
-### 构建要求
+### Build Requirements
 
-  * **Go 1.24.4** 或更高版本
+  * **Go 1.24.4** or higher
 
-您也可以使用 **Nix Flake** 来构建，以获得可复现的构建环境。
+You can also use **Nix Flake** for a reproducible build environment.
 
-要构建可执行文件，请运行：
+To build the executable, run:
 
 ```bash
 go build -o lychee ./cmd/app/main.go
@@ -48,16 +49,15 @@ go build -o lychee ./cmd/app/main.go
 
 -----
 
-### 从NIX BUilD构建
+### Build from Nix
 
 ```shell
 nix build .
 ```
 
+## Usage 🚀
 
-## 使用方法 🚀
-
-构建或安装完成后，您可以通过指定配置文件来运行 LYCHEE：
+After building or installing, you can run LYCHEE by specifying a configuration file:
 
 ```bash
 ./lychee -config configs/config.yaml
@@ -65,33 +65,33 @@ nix build .
 
 -----
 
-## 配置文件示例 ⚙️
+## Configuration File Example ⚙️
 
-以下是一个 `config.yaml` 示例，帮助您快速上手：
+Here is a sample `config.yaml` to help you get started:
 
 ```yaml
 # config.yaml
 
-# LYCHEE 检查服务状态和日志的频率（秒）。⏱️
+# The frequency in seconds at which LYCHEE checks service status and logs. ⏱️
 checkInterval: 60
 
-# 飞书（Lark）机器人 Webhook URL，用于发送通知。🔔
+# Lark bot Webhook URL for sending notifications. 🔔
 lark:
   WebhookURLs:
-    - "https://open.feishu.cn/open-apis/bot/v2/hook/URLA"
-    - "https://open.feishu.cn/open-apis/bot/v2/hook/URLB"
+    - "[https://open.feishu.cn/open-apis/bot/v2/hook/URLA](https://open.feishu.cn/open-apis/bot/v2/hook/URLA)"
+    - "[https://open.feishu.cn/open-apis/bot/v2/hook/URLB](https://open.feishu.cn/open-apis/bot/v2/hook/URLB)"
 
-# --- Systemd 服务监控 ---
-# 要监控的 systemd 服务列表。LYCHEE 会检查它们是否处于 'active' 状态。✅
+# --- Systemd Service Monitoring ---
+# A list of systemd services to monitor. LYCHEE will check if they are in an 'active' state. ✅
 systemd:
   services:
     - "daed.service"
     - "sshd.service"
     - "nginx.service"
 
-# --- Journald 日志监控 ---
-# 配置特定服务和关键词的日志监控。
-# 如果在服务的 Journal 日志中发现任何指定关键词，LYCHEE 将发出警报。🚨
+# --- Journald Log Monitoring ---
+# Configure log monitoring for specific services and keywords.
+# LYCHEE will send an alert if any of the specified keywords are found in the service's Journal logs. 🚨
 journal:
   - serviceName: "nginx.service"
     keywords:
@@ -104,10 +104,11 @@ journal:
       - "Invalid user"
 ```
 
-## 贡献 🤝
+## Contributing 🤝
 
-我们非常欢迎您的贡献！请查看我们的 [贡献指南](CONTRIBUTING.md) 以获取更多信息。
+We welcome contributions\! Please see our [Contributing Guide](https://www.google.com/search?q=CONTRIBUTING.md) for more information.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+
