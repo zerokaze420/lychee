@@ -2,10 +2,7 @@ module hashcowuwu/lychee
 
 go 1.24.4
 
-require (
-	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/spf13/viper v1.20.1
-)
+require github.com/spf13/viper v1.20.1
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
